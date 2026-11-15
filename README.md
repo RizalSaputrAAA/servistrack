@@ -1,0 +1,38 @@
+# ServisTrack (MVP Demo Day 16 Nov 2026)
+
+## Menjalankan di komputer
+1. `npm install`
+2. Buat file `.env.local` (salin dari `.env.example`), isi 4 nilainya
+3. `npm run dev` lalu buka http://localhost:3000
+4. `npm test` untuk unit test triage + konfigurasi paket/langganan
+
+## Database
+Jalankan di Supabase SQL Editor, berurutan: `supabase/01_schema.sql`, `02_seed.sql`,
+lalu setelah membuat 3 user di Authentication: `03_profiles.sql`.
+Terakhir `supabase/04_subscription.sql` (aman dijalankan berulang kali).
+
+## Deploy
+Push ke GitHub, import di Vercel, isi 4 environment variable yang sama.
+Region fungsi diatur di `vercel.json` (Tokyo, dekat database).
+Variabel NEXT_PUBLIC_* bertipe Config; SUPABASE_SERVICE_ROLE_KEY bertipe Secret.
+
+## Akun demo
+owner@ / kasir@ / teknisi@servistrack.id. Tiket demo: SV-2026-0003.
+
+## Langganan (bulanan / tahunan)
+1. Jalankan `supabase/04_subscription.sql` di Supabase SQL Editor. Skrip ini menambah
+   kolom `plan`, `trial_ends_at`, `paid_until` di tabel `shops`, membuat tabel
+   `sub_invoices` beserta kolom `method` (metode pembayaran). Idempoten, aman diulang.
+2. Tambah environment variable di Vercel: `SUB_ENFORCE=false` dan `ADMIN_PASSWORD=...`
+   (password panjang & acak). Jangan pakai nilai contoh.
+3. Atur harga, masa percobaan, nama merchant QRIS, dan daftar metode pembayaran di
+   `lib/plans.ts` (`PRICE_MONTHLY`, `PRICE_YEARLY`, `TRIAL_DAYS`, `QRIS_NAME`,
+   `PAY_METHODS`). Ganti nomor & nama pemilik pada entri e-wallet dengan akun asli Anda;
+   `npm test` akan gagal bila format nomor salah atau nama pemilik kosong.
+4. Simpan gambar QRIS asli sebagai `public/qris.png` (folder `public/` belum ada — buat bila perlu).
+   Tanpa gambar ini, opsi QRIS menampilkan pesan galat; e-wallet tetap bisa dipakai.
+5. Pemilik toko mengelola paket di `/langganan` (pilih paket → pilih metode bayar → bayar
+   dengan nominal tepat termasuk kode unik → "Saya sudah bayar"). Anda memverifikasi
+   pembayaran di `/admin`.
+6. Setelah Demo Day, ubah `SUB_ENFORCE=true` lalu Redeploy agar toko yang masa aktifnya
+   habis benar-benar terkunci.
