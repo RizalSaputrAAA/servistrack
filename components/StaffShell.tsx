@@ -55,7 +55,8 @@ export default function StaffShell({ roles, children }: { roles: string[]; child
           {canKasir && <Link href="/kasir/tickets" className="text-sm hover:underline">Daftar Tiket</Link>}
           {canTech && <Link href="/teknisi/tickets" className="text-sm hover:underline">Antrean Teknisi</Link>}
           {me.role === "owner" && <Link href="/langganan" className="text-sm hover:underline">Langganan</Link>}
-          <span className="ml-auto text-sm text-slate-500">{me.full_name} ({me.role})</span>
+          <Link href="/ganti-sandi" className="ml-auto text-sm hover:underline">Ganti sandi</Link>
+          <span className="text-sm text-slate-500">{me.full_name} ({me.role})</span>
           <button onClick={logout} className="btn-ghost">Keluar</button>
         </div>
       </nav>
