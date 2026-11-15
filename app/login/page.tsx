@@ -53,6 +53,7 @@ export default function Login() {
         <Link className="underline" href="/lupa-sandi">Lupa sandi?</Link>
         <Link className="underline" href="/daftar">Daftar toko baru</Link>
         <Link className="underline" href="/demo">Akun demo</Link>
+        <Link className="underline" href="/panduan">Panduan</Link>
       </div>
     </main>
   );

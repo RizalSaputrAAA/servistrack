@@ -73,6 +73,7 @@ export default function Demo() {
         <Link className="btn-primary" href="/login">Masuk sekarang</Link>
         <Link className="btn-ghost" href="/daftar">Coba daftar toko baru</Link>
         <Link className="btn-ghost" href="/">Halaman pelacakan</Link>
+        <Link className="btn-ghost" href="/panduan">Panduan lengkap</Link>
       </div>
     </main>
   );
