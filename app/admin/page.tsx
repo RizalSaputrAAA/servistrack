@@ -98,6 +98,49 @@ export default function Admin() {
       {err && <p className="err">{err}</p>}
 
       <div className="card">
+        <h2 className="mb-2 font-semibold">Keuangan langganan</h2>
+        <div className="mb-3 grid gap-2 sm:grid-cols-3">
+          <div className="rounded-lg bg-slate-50 p-3">
+            <div className="text-xs text-slate-500">Total pendapatan</div>
+            <div className="text-xl font-bold">{rupiah(d.finance?.total || 0)}</div>
+          </div>
+          <div className="rounded-lg bg-slate-50 p-3">
+            <div className="text-xs text-slate-500">Bulan ini</div>
+            <div className="text-xl font-bold">{rupiah(d.finance?.monthTotal || 0)}</div>
+          </div>
+          <div className="rounded-lg bg-slate-50 p-3">
+            <div className="text-xs text-slate-500">Transaksi lunas</div>
+            <div className="text-xl font-bold">{d.finance?.count || 0}</div>
+          </div>
+        </div>
+        {(d.finance?.recent || []).length === 0 && <p className="text-sm text-slate-500">Belum ada pembayaran lunas.</p>}
+        {(d.finance?.recent || []).length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr><th className="th">Tanggal</th><th className="th">Toko</th><th className="th">Paket</th><th className="th">Metode</th><th className="th">Nominal</th></tr>
+              </thead>
+              <tbody>
+                {d.finance.recent.map((r: any) => (
+                  <tr key={r.id} className="border-t border-slate-100">
+                    <td className="td whitespace-nowrap">{fmtDate(r.paid_at)}</td>
+                    <td className="td">{r.shops?.name || "-"}</td>
+                    <td className="td">{NAMA[r.plan] || r.plan}</td>
+                    <td className="td">{(r.method || "-").toUpperCase()}</td>
+                    <td className="td font-semibold">{rupiah(r.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {(d.finance?.perMonth || []).length > 0 && (
+          <p className="mt-2 text-xs text-slate-500">
+            Per bulan: {d.finance.perMonth.map((m: any) => `${m.month}: ${rupiah(m.total)} (${m.count})`).join(" · ")}
+          </p>
+        )}
+      </div>
+      <div className="card">
         <h2 className="mb-2 font-semibold">Tagihan menunggu verifikasi</h2>
         {d.invoices.length === 0 && <p className="text-sm text-slate-500">Tidak ada tagihan.</p>}
         {d.invoices.map((i: any) => (

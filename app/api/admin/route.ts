@@ -19,7 +19,9 @@ function passwordOk(req: Request) {
 // Daftar email yang boleh masuk /admin lewat login owner (pengelola platform).
 // Pisahkan dengan koma bila lebih dari satu. Default: akun demo owner.
 function platformAdmins() {
-  return (process.env.PLATFORM_ADMIN_EMAILS || "owner@servistrack.id")
+  // Kosong secara default: jalur token MATI, sehingga /admin hanya bisa dibuka dengan password.
+  // Isi env ini hanya bila Anda ingin email tertentu bisa masuk tanpa password.
+  return (process.env.PLATFORM_ADMIN_EMAILS || "")
     .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
 }
 
@@ -59,7 +61,34 @@ export async function GET(req: Request) {
     for (const u of users?.users || []) if (u.id) emailById[u.id] = u.email || "";
     const staff = (profiles || []).map((p: any) => ({ ...p, email: emailById[p.id] || "" }));
 
-    return json({ shops: list, invoices: invoices || [], staff });
+    // Catatan keuangan: seluruh tagihan yang sudah lunas.
+    const { data: paid } = await db.from("sub_invoices")
+      .select("id,plan,amount,method,paid_at,created_at,shops(name)")
+      .eq("status", "paid").order("paid_at", { ascending: false }).limit(500);
+    const rows = (paid || []) as any[];
+    const monthKey = (d: string | null) => (d ? String(d).slice(0, 7) : "");
+    const thisKey = new Date().toISOString().slice(0, 7);
+    const sum = (arr: any[]) => arr.reduce((a, r) => a + (Number(r.amount) || 0), 0);
+    const perMonth: Record<string, { total: number; count: number }> = {};
+    for (const r of rows) {
+      const k = monthKey(r.paid_at);
+      if (!k) continue;
+      perMonth[k] = perMonth[k] || { total: 0, count: 0 };
+      perMonth[k].total += Number(r.amount) || 0;
+      perMonth[k].count += 1;
+    }
+    const bulanIni = rows.filter((r) => monthKey(r.paid_at) === thisKey);
+    const finance = {
+      total: sum(rows),
+      count: rows.length,
+      monthTotal: sum(bulanIni),
+      monthCount: bulanIni.length,
+      perMonth: Object.entries(perMonth).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 6)
+        .map(([month, v]) => ({ month, ...v })),
+      recent: rows.slice(0, 10),
+    };
+
+    return json({ shops: list, invoices: invoices || [], staff, finance });
   } catch (e) { return fail(e, 500); }
 }
 

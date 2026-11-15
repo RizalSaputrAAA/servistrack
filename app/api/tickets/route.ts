@@ -50,25 +50,33 @@ export async function POST(req: Request) {
 
   const db = admin();
   const year = new Date().getFullYear();
-  // Ambil nomor urut dari kode terbesar yang pernah ada, bukan dari jumlah tiket.
-  // Dengan begitu menghapus tiket tidak membuat kode lama dipakai ulang.
+  // Kode tiket dipakai untuk pelacakan publik, jadi harus unik GLOBAL (lintas toko).
+  // Ambil nomor terbesar dari semua toko, lalu coba beberapa kali bila bentrok.
   const { data: last } = await db.from("tickets").select("ticket_code")
-    .eq("shop_id", me.shop_id).like("ticket_code", `SV-${year}-%`)
+    .like("ticket_code", `SV-${year}-%`)
     .order("ticket_code", { ascending: false }).limit(1);
   const lastSeq = last?.[0]?.ticket_code ? parseInt(String(last[0].ticket_code).split("-")[2], 10) : 0;
-  const nextSeq = (Number.isNaN(lastSeq) ? 0 : lastSeq) + 1;
-  const code = `SV-${year}-${String(nextSeq).padStart(4, "0")}`;
+  let seq = (Number.isNaN(lastSeq) ? 0 : lastSeq) + 1;
   const t = triage(symptoms);
 
-  const { data, error } = await db.from("tickets").insert({
-    shop_id: me.shop_id, ticket_code: code,
-    customer_name: name, customer_phone: phone,
-    device_brand: b.brand || null, device_type: b.type || null,
-    symptoms, notes: b.notes || null,
-    triage_diagnosis: t.diagnosis, triage_confidence: t.confidence, triage_score: t.score,
-    status: "received", created_by: me.id,
-  }).select().single();
-  if (error) return fail(error, 500);
+  let data: any = null;
+  let code = "";
+  let lastErr: any = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    code = `SV-${year}-${String(seq + attempt).padStart(4, "0")}`;
+    const res = await db.from("tickets").insert({
+      shop_id: me.shop_id, ticket_code: code,
+      customer_name: name, customer_phone: phone,
+      device_brand: b.brand || null, device_type: b.type || null,
+      symptoms, notes: b.notes || null,
+      triage_diagnosis: t.diagnosis, triage_confidence: t.confidence, triage_score: t.score,
+      status: "received", created_by: me.id,
+    }).select().single();
+    if (!res.error) { data = res.data; lastErr = null; break; }
+    lastErr = res.error;
+    if (!/duplicate key/i.test(res.error.message)) break;
+  }
+  if (!data) return fail(lastErr || "Gagal membuat tiket", 500);
 
   await db.from("ticket_events").insert({
     ticket_id: data.id, from_status: null, to_status: "received",

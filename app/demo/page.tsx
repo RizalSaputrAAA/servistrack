@@ -8,6 +8,7 @@ const AKUN = [
   { role: "Pemilik toko", email: "owner@servistrack.id", pass: "DemoServis2026", akses: "Semua menu + kelola langganan + /admin" },
   { role: "Kasir", email: "kasir@servistrack.id", pass: "DemoServis2026", akses: "Buat tiket, pembayaran, serah terima" },
   { role: "Teknisi", email: "teknisi@servistrack.id", pass: "DemoServis2026", akses: "Antrean tugas, update status, pemakaian sparepart" },
+  { role: "Toko berlangganan", email: "demo.paid@servistrack.id", pass: "DemoServis2026", akses: "Contoh toko yang SUDAH BAYAR — langganan aktif 30 hari, punya tiket sendiri" },
 ];
 
 export default function Demo() {
@@ -63,7 +64,7 @@ export default function Demo() {
         <h2 className="font-semibold">Catatan</h2>
         <ul className="list-disc space-y-1 pl-5 text-sm text-slate-600">
           <li>Semua akun memakai sandi yang sama: <b className="font-mono">DemoServis2026</b></li>
-          <li>Halaman <b>/admin</b> dibuka dengan login pemilik toko, atau dengan password admin (khusus pengelola).</li>
+          <li>Halaman <b>/admin</b> hanya untuk pengelola platform dan dilindungi password admin — akun demo di atas <b>tidak bisa</b> membukanya.</li>
           <li>Toko contoh: <b>Servis Laptop Mitra Pontianak</b>, status percobaan 3 hari.</li>
           <li>Pelanggan bisa melacak tiket tanpa login di halaman utama memakai kode tiket.</li>
         </ul>
