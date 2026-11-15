@@ -1,8 +1,15 @@
 import { admin } from "@/lib/supabase-admin";
 import { getStaff, json, fail } from "@/lib/auth";
-import { getSubState } from "@/lib/subscription";
+import { getSubState, isDemoShop } from "@/lib/subscription";
 import { PRICE_MONTHLY, PRICE_YEARLY, PAY_METHODS } from "@/lib/plans";
+import { createSnapTransaction, midtransConfig } from "@/lib/midtrans";
 export const dynamic = "force-dynamic";
+
+function originOf(req: Request) {
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+  return host ? `${proto}://${host}` : "";
+}
 
 export async function GET(req: Request) {
   const me = await getStaff(req);
@@ -11,7 +18,12 @@ export async function GET(req: Request) {
     const state = await getSubState(me.shop_id);
     const { data: hist } = await admin().from("sub_invoices").select("*").eq("shop_id", me.shop_id).order("created_at", { ascending: false }).limit(10);
     const pending = (hist || []).find((h: any) => h.status === "pending") || null;
-    return json({ state, pending, history: hist || [] });
+    const cfg = midtransConfig();
+    return json({
+      state, pending, history: hist || [],
+      demo: isDemoShop(me.shop_id),
+      gateway: { enabled: cfg.enabled, production: cfg.production },
+    });
   } catch (e) { return fail(e, 500); }
 }
 
@@ -22,6 +34,38 @@ export async function POST(req: Request) {
   const b = await req.json().catch(() => ({}));
   const db = admin();
 
+  // Bayar online lewat Midtrans (dipakai toko sungguhan, bukan toko demo).
+  if (b.action === "checkout") {
+    if (!["monthly", "yearly"].includes(b.plan)) return fail("Paket tidak valid");
+    if (!midtransConfig().enabled) return fail("Pembayaran online belum aktif. Hubungi admin.");
+    if (isDemoShop(me.shop_id)) return fail("Toko demo tidak perlu membayar");
+
+    await db.from("sub_invoices").update({ status: "cancelled" })
+      .eq("shop_id", me.shop_id).eq("status", "pending").eq("claimed", false);
+
+    const amount = b.plan === "yearly" ? PRICE_YEARLY : PRICE_MONTHLY;
+    const { data: inv, error } = await db.from("sub_invoices").insert({
+      shop_id: me.shop_id, plan: b.plan, amount, unique_code: 0, method: "midtrans",
+    }).select().single();
+    if (error || !inv) return fail(error || "Gagal membuat tagihan", 500);
+
+    const { data: au } = await db.auth.admin.getUserById(me.id);
+    try {
+      const snap = await createSnapTransaction({
+        orderId: inv.id,
+        amount,
+        itemName: `Langganan ${b.plan === "yearly" ? "Tahunan" : "Bulanan"} ServisTrack`,
+        customer: { name: me.full_name, email: au?.user?.email, phone: null },
+        finishUrl: `${originOf(req)}/langganan`,
+      });
+      return json({ ok: true, redirect_url: snap.redirect_url, invoice_id: inv.id });
+    } catch (e: any) {
+      await db.from("sub_invoices").delete().eq("id", inv.id);
+      return fail(e?.message || "Gagal membuka pembayaran", 500);
+    }
+  }
+
+  // Tagihan manual (QRIS statis / e-wallet) — tetap dipakai toko demo dan sebagai cadangan.
   if (b.action === "order") {
     if (!["monthly", "yearly"].includes(b.plan)) return fail("Paket tidak valid");
     if (!PAY_METHODS.some((m) => m.id === b.method)) return fail("Pilih metode pembayaran");

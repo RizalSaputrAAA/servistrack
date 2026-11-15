@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { admin } from "./supabase-admin";
 import { NEXT } from "./status";
-import { getSubState } from "./subscription";
+import { getSubState, isDemoShop } from "./subscription";
 
 export const json = (d: any, status = 200) => NextResponse.json(d, { status });
 export const fail = (e: any, status = 400) => json({ error: e?.message || String(e) }, status);
@@ -16,7 +16,7 @@ export async function getStaff(req: Request) {
   const { data: p } = await db.from("profiles").select("*").eq("id", data.user.id).single();
   if (!p || !p.active) return null;
   // Gerbang langganan (aktif hanya jika SUB_ENFORCE=true). /api/me dan /api/subscription tetap terbuka.
-  if (process.env.SUB_ENFORCE === "true") {
+  if (process.env.SUB_ENFORCE === "true" && !isDemoShop(p.shop_id)) {
     const path = new URL(req.url).pathname;
     if (!path.startsWith("/api/me") && !path.startsWith("/api/subscription")) {
       try {

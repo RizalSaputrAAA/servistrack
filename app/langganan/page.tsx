@@ -31,12 +31,23 @@ function Content() {
     setBusy(false);
   };
 
+  const bayarOnline = async (plan: "monthly" | "yearly") => {
+    if (busy) return;
+    setBusy(true); setErr(""); setMsg("");
+    try {
+      const r = await api("/api/subscription", { method: "POST", body: { action: "checkout", plan } });
+      if (!r.redirect_url) throw new Error("Tautan pembayaran tidak tersedia");
+      window.location.href = r.redirect_url;
+    } catch (e: any) { setErr(e.message); setBusy(false); }
+  };
+
   if (!d) return <p className={err ? "err" : "text-slate-500"}>{err || "Memuat…"}</p>;
   const s = d.state;
   const p = d.pending;
   const pm = p ? PAY_METHODS.find((m) => m.id === (p.method || "qris")) : null;
   const hemat = PRICE_MONTHLY * 12 - PRICE_YEARLY;
   const chosenPrice = choose === "yearly" ? PRICE_YEARLY : PRICE_MONTHLY;
+  const g = !!(d.gateway?.enabled && !d.demo); // pembayaran online aktif untuk toko ini
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4">
@@ -53,7 +64,7 @@ function Content() {
 
       {!isOwner && <p className="text-slate-600">Hanya pemilik toko yang dapat mengelola langganan. Hubungi pemilik toko.</p>}
 
-      {isOwner && choose && (
+      {isOwner && !g && choose && (
         <div className="card border-2 border-brand">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -78,7 +89,7 @@ function Content() {
         </div>
       )}
 
-      {isOwner && p && pm && (
+      {isOwner && p && pm && !g && (
         <div className="card border-brand">
           <h2 className="mb-1 font-semibold">Tagihan {NAMA[p.plan]} via {pm.name}: menunggu pembayaran</h2>
           <p className="text-sm">Bayar dengan nominal <b>tepat</b>:</p>
@@ -115,19 +126,28 @@ function Content() {
         </div>
       )}
 
+      {isOwner && g && p && (
+        <div className="card border-brand">
+          <h2 className="mb-1 font-semibold">Menunggu pembayaran online</h2>
+          <p className="text-sm">Tagihan {NAMA[p.plan]} sebesar <b>{rupiah(p.amount)}</b> belum lunas.</p>
+          <p className="mt-1 text-xs text-slate-500">Selesaikan pembayaran di halaman Midtrans. Status berubah otomatis setelah pembayaran berhasil — tidak perlu konfirmasi manual.</p>
+          <button className="btn-primary mt-3" disabled={busy} onClick={() => bayarOnline(p.plan)}>Lanjutkan pembayaran</button>
+        </div>
+      )}
+
       {isOwner && (
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="card">
             <h2 className="font-semibold">Bulanan</h2>
             <p className="my-2 text-3xl font-extrabold">{rupiah(PRICE_MONTHLY)}<span className="text-sm font-normal text-slate-500"> / bulan</span></p>
             <p className="mb-3 text-sm text-slate-600">Fleksibel, bayar tiap bulan.</p>
-            <button className="btn-ghost" disabled={busy} onClick={() => setChoose("monthly")}>Pilih bulanan</button>
+            <button className="btn-ghost" disabled={busy} onClick={() => (g ? bayarOnline("monthly") : setChoose("monthly"))}>{g ? "Bayar online" : "Pilih bulanan"}</button>
           </div>
           <div className="card border-2 border-brand">
             <h2 className="font-semibold">Tahunan <span className="ml-1 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-bold text-brand-dark">Hemat {rupiah(hemat)}</span></h2>
             <p className="my-2 text-3xl font-extrabold">{rupiah(PRICE_YEARLY)}<span className="text-sm font-normal text-slate-500"> / tahun</span></p>
             <p className="mb-3 text-sm text-slate-600">Lebih hemat dibanding bayar bulanan.</p>
-            <button className="btn-primary" disabled={busy} onClick={() => setChoose("yearly")}>Pilih tahunan</button>
+            <button className="btn-primary" disabled={busy} onClick={() => (g ? bayarOnline("yearly") : setChoose("yearly"))}>{g ? "Bayar online" : "Pilih tahunan"}</button>
           </div>
         </div>
       )}

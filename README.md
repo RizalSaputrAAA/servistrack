@@ -19,6 +19,16 @@ Variabel NEXT_PUBLIC_* bertipe Config; SUPABASE_SERVICE_ROLE_KEY bertipe Secret.
 ## Akun demo
 owner@ / kasir@ / teknisi@servistrack.id. Tiket demo: SV-2026-0003.
 
+## Pembayaran online (opsional)
+Isi `MIDTRANS_SERVER_KEY` (+ `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY`) untuk mengaktifkan pembayaran
+otomatis lewat Midtrans Snap. Bila kosong, sistem memakai pembayaran manual (QRIS statis / e-wallet).
+
+- Webhook: `POST /api/payments/midtrans` — status divalidasi lewat signature SHA512.
+- `order_id` = id tagihan, jadi tidak perlu kolom tambahan di database.
+- Isi `DEMO_SHOP_IDS` dengan id toko demo agar tidak wajib bayar dan tidak pernah terkunci.
+- Sandbox: `MIDTRANS_PRODUCTION=false`; produksi: `true` setelah akun merchant disetujui.
+- URL notifikasi di dashboard Midtrans: `https://<domain>/api/payments/midtrans`.
+
 ## Pendaftaran toko & sandi
 - Toko baru daftar mandiri di `/daftar` (nama toko, alamat, WA, nama pemilik, email, password).
   Akun pemilik langsung aktif tanpa verifikasi email dan mendapat percobaan 3 hari.

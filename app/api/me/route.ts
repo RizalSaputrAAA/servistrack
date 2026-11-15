@@ -1,5 +1,5 @@
 import { getStaff, json } from "@/lib/auth";
-import { getSubState } from "@/lib/subscription";
+import { getSubState, isDemoShop } from "@/lib/subscription";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   const enforce = process.env.SUB_ENFORCE === "true";
   try {
     const sub = await getSubState(me.shop_id);
-    return json({ ...me, sub: { ...sub, enforce, locked: enforce && !sub.active } });
+    return json({ ...me, sub: { ...sub, enforce, locked: enforce && !sub.active && !isDemoShop(me.shop_id) } });
   } catch {
     return json(me); // data langganan belum siap: login tetap jalan
   }

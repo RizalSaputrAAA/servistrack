@@ -31,3 +31,9 @@ export async function extendSub(shopId: string, plan: "monthly" | "yearly") {
   const { error } = await db.from("shops").update({ plan, paid_until: base.toISOString() }).eq("id", shopId);
   if (error) throw new Error(error.message);
 }
+
+// Toko demo: tidak pernah terkunci dan tidak wajib membayar.
+export function isDemoShop(shopId: string) {
+  const ids = (process.env.DEMO_SHOP_IDS || "").split(",").map((s) => s.trim()).filter(Boolean);
+  return ids.includes(shopId);
+}
