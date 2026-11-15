@@ -1,11 +1,15 @@
 import { admin } from "@/lib/supabase-admin";
 import { json, fail } from "@/lib/auth";
 import { limited } from "@/lib/ratelimit";
+import { seedPartRows } from "@/lib/seed-parts";
 export const dynamic = "force-dynamic";
 
-// Pendaftaran toko baru: buat akun pemilik + toko + profil dalam satu langkah.
+// Pendaftaran toko baru: buat akun pemilik + toko + profil + suku cadang awal.
+// Set REGISTRATION_OPEN=false di environment untuk menutup pendaftaran.
 export async function POST(req: Request) {
+  if (process.env.REGISTRATION_OPEN === "false") return json({ error: "Pendaftaran sedang ditutup" }, 403);
   if (limited(req, 5)) return json({ error: "Terlalu banyak percobaan. Tunggu 1 menit." }, 429);
+
   const b = await req.json().catch(() => ({}));
   const shopName = String(b.shop_name || "").trim();
   const ownerName = String(b.owner_name || "").trim();
@@ -21,7 +25,7 @@ export async function POST(req: Request) {
 
   const db = admin();
 
-  // 1) Buat akun. email_confirm: true agar bisa langsung masuk tanpa klik verifikasi.
+  // 1) Akun pemilik. email_confirm: true agar bisa langsung masuk.
   const { data: created, error: uErr } = await db.auth.admin.createUser({
     email, password, email_confirm: true, user_metadata: { full_name: ownerName },
   });
@@ -32,7 +36,7 @@ export async function POST(req: Request) {
   }
   const userId = created.user.id;
 
-  // 2) Buat toko. Masa percobaan otomatis dari default kolom trial_ends_at.
+  // 2) Toko baru. Masa percobaan mengikuti default kolom trial_ends_at.
   const { data: shop, error: sErr } = await db.from("shops")
     .insert({ name: shopName, address: address || null, phone: phone || null })
     .select("id").single();
@@ -41,7 +45,7 @@ export async function POST(req: Request) {
     return fail(sErr?.message || "Gagal membuat toko");
   }
 
-  // 3) Daftarkan sebagai pemilik (owner) toko tersebut.
+  // 3) Profil pemilik.
   const { error: pErr } = await db.from("profiles")
     .insert({ id: userId, shop_id: shop.id, full_name: ownerName, role: "owner" });
   if (pErr) {
@@ -49,6 +53,9 @@ export async function POST(req: Request) {
     await db.auth.admin.deleteUser(userId).catch(() => {});
     return fail(pErr.message);
   }
+
+  // 4) Suku cadang awal supaya toko baru langsung bisa dipakai.
+  await db.from("parts").insert(seedPartRows(shop.id));
 
   return json({ ok: true, shop_id: shop.id });
 }

@@ -17,6 +17,11 @@ export default function Admin() {
   const [busy, setBusy] = useState(false);
   const [rstEmail, setRstEmail] = useState("");
   const [rstPw, setRstPw] = useState("");
+  const [stShop, setStShop] = useState("");
+  const [stName, setStName] = useState("");
+  const [stEmail, setStEmail] = useState("");
+  const [stRole, setStRole] = useState("cashier");
+  const [stPw, setStPw] = useState("");
 
   const call = async (method: string, body?: any, tok?: string) => {
     const bearer = tok || token;
@@ -130,6 +135,43 @@ export default function Admin() {
             </div>
           </div>
         ))}
+      </div>
+      <div className="card space-y-3">
+        <h2 className="font-semibold">Staf toko</h2>
+        <p className="text-xs text-slate-500">Tambah kasir/teknisi. Sandi awal bisa diganti setelah staf login.</p>
+        {(d.staff || []).length === 0 && <p className="text-sm text-slate-500">Belum ada staf.</p>}
+        {(d.staff || []).map((s: any) => (
+          <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 p-2 text-sm">
+            <div>
+              <b>{s.full_name}</b> <span className="text-xs text-slate-500">({s.role})</span>
+              <br />
+              <span className="text-xs text-slate-500">{s.email || "-"} · {d.shops.find((x: any) => x.id === s.shop_id)?.name || "-"}{s.active ? "" : " · NONAKTIF"}</span>
+            </div>
+            <button className="btn-ghost" disabled={busy}
+              onClick={() => act({ action: "set_staff_active", id: s.id, active: !s.active }, s.active ? "Staf dinonaktifkan" : "Staf diaktifkan")}>
+              {s.active ? "Nonaktifkan" : "Aktifkan"}
+            </button>
+          </div>
+        ))}
+        <hr className="border-slate-200" />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <select className="input" value={stShop} onChange={(e) => setStShop(e.target.value)}>
+            <option value="">Pilih toko…</option>
+            {d.shops.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <select className="input" value={stRole} onChange={(e) => setStRole(e.target.value)}>
+            <option value="cashier">Kasir</option>
+            <option value="technician">Teknisi</option>
+            <option value="owner">Pemilik</option>
+          </select>
+          <input className="input" placeholder="nama lengkap" value={stName} onChange={(e) => setStName(e.target.value)} />
+          <input className="input" placeholder="email" value={stEmail} onChange={(e) => setStEmail(e.target.value)} />
+          <input className="input" placeholder="sandi awal (min. 8)" value={stPw} onChange={(e) => setStPw(e.target.value)} />
+          <button className="btn-primary" disabled={busy}
+            onClick={() => { act({ action: "add_staff", shop_id: stShop, full_name: stName, email: stEmail, role: stRole, password: stPw }, "Staf ditambahkan"); setStName(""); setStEmail(""); setStPw(""); }}>
+            Tambah staf
+          </button>
+        </div>
       </div>
       <div className="card space-y-3">
         <h2 className="font-semibold">Reset sandi staf</h2>

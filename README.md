@@ -28,6 +28,10 @@ owner@ / kasir@ / teknisi@servistrack.id. Tiket demo: SV-2026-0003.
 - Supaya email reset benar-benar terkirim, atur SMTP kustom di Supabase
   (Project Settings → Auth → SMTP). Email bawaan Supabase dibatasi beberapa per jam.
 - `/admin` bisa dibuka dengan login pemilik toko (role owner) atau dengan `ADMIN_PASSWORD`.
+- Toko baru otomatis mendapat 26 suku cadang awal (lihat `lib/seed-parts.ts`).
+- Tutup pendaftaran publik: set `REGISTRATION_OPEN=false` di environment.
+- Manajemen staf ada di kartu "Staf toko" pada `/admin`: tambah kasir/teknisi/pemilik,
+  dan nonaktifkan akun yang tidak dipakai lagi.
 
 ## Langganan (bulanan / tahunan)
 1. Jalankan `supabase/04_subscription.sql` di Supabase SQL Editor. Skrip ini menambah

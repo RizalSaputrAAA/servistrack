@@ -6,6 +6,8 @@ import { limited } from "@/lib/ratelimit";
 import { TRIAL_DAYS } from "@/lib/plans";
 export const dynamic = "force-dynamic";
 
+const ROLES = ["owner", "cashier", "technician"];
+
 function passwordOk(req: Request) {
   const pw = process.env.ADMIN_PASSWORD || "";
   const got = req.headers.get("x-admin-password") || "";
@@ -40,7 +42,16 @@ export async function GET(req: Request) {
     for (const s of shops || []) list.push({ ...s, state: await getSubState(s.id) });
     const { data: invoices } = await db.from("sub_invoices").select("*, shops(name)").eq("status", "pending")
       .order("claimed", { ascending: false }).order("created_at");
-    return json({ shops: list, invoices: invoices || [] });
+
+    // Daftar staf + email (email ada di auth.users, bukan di tabel profiles).
+    const { data: profiles } = await db.from("profiles")
+      .select("id,shop_id,full_name,role,active").order("created_at");
+    const { data: users } = await db.auth.admin.listUsers({ page: 1, perPage: 200 });
+    const emailById: Record<string, string> = {};
+    for (const u of users?.users || []) if (u.id) emailById[u.id] = u.email || "";
+    const staff = (profiles || []).map((p: any) => ({ ...p, email: emailById[p.id] || "" }));
+
+    return json({ shops: list, invoices: invoices || [], staff });
   } catch (e) { return fail(e, 500); }
 }
 
@@ -72,6 +83,33 @@ export async function POST(req: Request) {
       if (!u) return fail("Email tidak ditemukan");
       const { error: pwErr } = await db.auth.admin.updateUserById(u.id, { password });
       if (pwErr) return fail(pwErr);
+    } else if (b.action === "add_staff") {
+      const shopId = String(b.shop_id || "");
+      const email = String(b.email || "").trim().toLowerCase();
+      const fullName = String(b.full_name || "").trim();
+      const role = String(b.role || "cashier");
+      const password = String(b.password || "");
+      if (!shopId) return fail("Pilih toko");
+      if (fullName.length < 3) return fail("Nama staf minimal 3 karakter");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("Email tidak valid");
+      if (!ROLES.includes(role)) return fail("Peran tidak valid");
+      if (password.length < 8) return fail("Password minimal 8 karakter");
+      const { data: cu, error: cuErr } = await db.auth.admin.createUser({
+        email, password, email_confirm: true, user_metadata: { full_name: fullName },
+      });
+      if (cuErr || !cu?.user) {
+        const m = cuErr?.message || "";
+        return fail(/already|registered|exists|duplicate/i.test(m) ? "Email sudah terdaftar" : (m || "Gagal membuat akun"));
+      }
+      const { error: prErr } = await db.from("profiles")
+        .insert({ id: cu.user.id, shop_id: shopId, full_name: fullName, role });
+      if (prErr) {
+        await db.auth.admin.deleteUser(cu.user.id).catch(() => {});
+        return fail(prErr.message);
+      }
+    } else if (b.action === "set_staff_active") {
+      const { error: stErr } = await db.from("profiles").update({ active: !!b.active }).eq("id", b.id);
+      if (stErr) return fail(stErr);
     } else if (b.action === "reset_trial") {
       const until = new Date(Date.now() + TRIAL_DAYS * 86400000).toISOString();
       await db.from("shops").update({ plan: "trial", trial_ends_at: until, paid_until: null }).eq("id", b.shop_id);
