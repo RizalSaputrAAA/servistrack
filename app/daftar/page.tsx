@@ -1,4 +1,5 @@
 "use client";
+import PasswordInput from "@/components/PasswordInput";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -60,11 +61,11 @@ export default function Daftar() {
         </div>
         <div>
           <label className="label" htmlFor="pw">Password (min. 8 karakter)</label>
-          <input id="pw" className="input" type="password" required value={f.password} onChange={set("password")} />
+          <PasswordInput id="pw" required value={f.password} onChange={set("password")} />
         </div>
         <div>
           <label className="label" htmlFor="pw2">Ulangi password</label>
-          <input id="pw2" className="input" type="password" required value={f.password2} onChange={set("password2")} />
+          <PasswordInput id="pw2" required value={f.password2} onChange={set("password2")} />
         </div>
         <button className="btn-primary w-full" disabled={busy}>{busy ? "Mendaftar…" : "Daftar"}</button>
       </form>

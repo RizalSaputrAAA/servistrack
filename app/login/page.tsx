@@ -1,4 +1,5 @@
 "use client";
+import PasswordInput from "@/components/PasswordInput";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -45,7 +46,7 @@ export default function Login() {
         </div>
         <div>
           <label className="label" htmlFor="pw">Password</label>
-          <input id="pw" className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          <PasswordInput id="pw" required value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
         <button className="btn-primary w-full" disabled={busy}>{busy ? "Masuk…" : "Masuk"}</button>
       </form>

@@ -1,4 +1,5 @@
 "use client";
+import PasswordInput from "@/components/PasswordInput";
 import { useEffect, useState } from "react";
 import StaffShell from "@/components/StaffShell";
 import { api } from "@/lib/api";
@@ -74,7 +75,7 @@ function Content() {
                   </div>
                   {resetId === s.id && (
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <input className="input" placeholder="sandi baru (min. 8)" value={resetPw} onChange={(e) => setResetPw(e.target.value)} />
+                      <PasswordInput placeholder="sandi baru (min. 8)" value={resetPw} onChange={(e) => setResetPw(e.target.value)} />
                       <button className="btn-primary" disabled={busy}
                         onClick={async () => { await act({ action: "reset_password", id: s.id, password: resetPw }, "Sandi staf direset"); setResetId(""); setResetPw(""); }}>
                         Simpan
@@ -102,7 +103,7 @@ function Content() {
           </div>
           <div>
             <label className="label" htmlFor="pw">Sandi awal (min. 8)</label>
-            <input id="pw" className="input" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+            <PasswordInput id="pw" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
           </div>
           <div>
             <label className="label" htmlFor="rl">Peran</label>

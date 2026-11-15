@@ -1,4 +1,5 @@
 "use client";
+import PasswordInput from "@/components/PasswordInput";
 import { useEffect, useState } from "react";
 import { rupiah, fmtDate } from "@/lib/status";
 import { getSupabase } from "@/lib/supabase-browser";
@@ -80,7 +81,7 @@ export default function Admin() {
         <div className="card space-y-3">
           {err && <p className="err">{err}</p>}
           <label className="label" htmlFor="pw">Password admin</label>
-          <input id="pw" type="password" className="input" value={pw} onChange={(e) => setPw(e.target.value)} />
+          <PasswordInput id="pw" value={pw} onChange={(e) => setPw(e.target.value)} />
           <button className="btn-primary w-full" onClick={load}>Masuk</button>
           <p className="text-xs text-slate-500">
             Sudah login sebagai pemilik toko? Admin terbuka otomatis tanpa password.
@@ -166,7 +167,7 @@ export default function Admin() {
           </select>
           <input className="input" placeholder="nama lengkap" value={stName} onChange={(e) => setStName(e.target.value)} />
           <input className="input" placeholder="email" value={stEmail} onChange={(e) => setStEmail(e.target.value)} />
-          <input className="input" placeholder="sandi awal (min. 8)" value={stPw} onChange={(e) => setStPw(e.target.value)} />
+          <PasswordInput placeholder="sandi awal (min. 8)" value={stPw} onChange={(e) => setStPw(e.target.value)} />
           <button className="btn-primary" disabled={busy}
             onClick={() => { act({ action: "add_staff", shop_id: stShop, full_name: stName, email: stEmail, role: stRole, password: stPw }, "Staf ditambahkan"); setStName(""); setStEmail(""); setStPw(""); }}>
             Tambah staf
@@ -177,7 +178,7 @@ export default function Admin() {
         <h2 className="font-semibold">Reset sandi staf</h2>
         <p className="text-xs text-slate-500">Cadangan bila email reset tidak sampai. Minimal 8 karakter.</p>
         <input className="input" placeholder="email staf" value={rstEmail} onChange={(e) => setRstEmail(e.target.value)} />
-        <input className="input" placeholder="sandi baru" value={rstPw} onChange={(e) => setRstPw(e.target.value)} />
+        <PasswordInput placeholder="sandi baru" value={rstPw} onChange={(e) => setRstPw(e.target.value)} />
         <button className="btn-primary" disabled={busy}
           onClick={() => { act({ action: "reset_user_password", email: rstEmail, password: rstPw }, "Sandi staf berhasil direset"); setRstPw(""); }}>
           Reset sandi

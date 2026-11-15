@@ -1,4 +1,5 @@
 "use client";
+import PasswordInput from "@/components/PasswordInput";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase-browser";
@@ -46,11 +47,11 @@ export default function AturSandi() {
         )}
         <div>
           <label className="label" htmlFor="pw">Sandi baru (min. 8)</label>
-          <input id="pw" className="input" type="password" value={pw} onChange={(e) => setPw(e.target.value)} />
+          <PasswordInput id="pw" value={pw} onChange={(e) => setPw(e.target.value)} />
         </div>
         <div>
           <label className="label" htmlFor="pw2">Ulangi sandi baru</label>
-          <input id="pw2" className="input" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
+          <PasswordInput id="pw2" value={pw2} onChange={(e) => setPw2(e.target.value)} />
         </div>
         <button className="btn-primary w-full" disabled={busy || !hasSession}>{busy ? "Menyimpan…" : "Simpan sandi baru"}</button>
       </form>

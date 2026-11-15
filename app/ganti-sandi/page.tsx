@@ -1,4 +1,5 @@
 "use client";
+import PasswordInput from "@/components/PasswordInput";
 import { useEffect, useState } from "react";
 import StaffShell from "@/components/StaffShell";
 import { getSupabase } from "@/lib/supabase-browser";
@@ -52,15 +53,15 @@ function Content() {
         {err && <p className="err">{err}</p>}
         <div>
           <label className="label" htmlFor="cur">Sandi saat ini</label>
-          <input id="cur" className="input" type="password" value={cur} onChange={(e) => setCur(e.target.value)} autoComplete="current-password" />
+          <PasswordInput id="cur" value={cur} onChange={(e) => setCur(e.target.value)} autoComplete="current-password" />
         </div>
         <div>
           <label className="label" htmlFor="pw">Sandi baru (min. 8 karakter)</label>
-          <input id="pw" className="input" type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />
+          <PasswordInput id="pw" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />
         </div>
         <div>
           <label className="label" htmlFor="pw2">Ulangi sandi baru</label>
-          <input id="pw2" className="input" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" />
+          <PasswordInput id="pw2" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" />
         </div>
         <button className="btn-primary w-full" disabled={busy}>{busy ? "Menyimpan…" : "Simpan sandi baru"}</button>
         <p className="text-xs text-slate-500">
