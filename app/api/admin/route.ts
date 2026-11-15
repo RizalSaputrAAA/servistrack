@@ -6,7 +6,7 @@ import { limited } from "@/lib/ratelimit";
 import { TRIAL_DAYS } from "@/lib/plans";
 export const dynamic = "force-dynamic";
 
-function allowed(req: Request) {
+function passwordOk(req: Request) {
   const pw = process.env.ADMIN_PASSWORD || "";
   const got = req.headers.get("x-admin-password") || "";
   if (!pw) return false;
@@ -14,9 +14,25 @@ function allowed(req: Request) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+// Jalur kedua: pemilik toko yang sudah login (Bearer token) boleh membuka admin.
+// Sengaja tidak memakai getStaff() agar gerbang langganan tidak ikut memblokir admin.
+async function ownerByToken(req: Request) {
+  const token = req.headers.get("authorization")?.replace("Bearer ", "");
+  if (!token) return false;
+  const db = admin();
+  const { data } = await db.auth.getUser(token);
+  if (!data?.user) return false;
+  const { data: p } = await db.from("profiles").select("role,active").eq("id", data.user.id).single();
+  return !!p && p.active && p.role === "owner";
+}
+
+async function allowed(req: Request) {
+  return passwordOk(req) || ownerByToken(req);
+}
+
 export async function GET(req: Request) {
   if (limited(req, 20)) return json({ error: "Terlalu banyak percobaan, tunggu 1 menit" }, 429);
-  if (!allowed(req)) return json({ error: "Password admin salah" }, 401);
+  if (!(await allowed(req))) return json({ error: "Password admin salah atau belum login sebagai pemilik toko" }, 401);
   try {
     const db = admin();
     const { data: shops } = await db.from("shops").select("id,name").order("created_at");
@@ -30,7 +46,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   if (limited(req, 20)) return json({ error: "Terlalu banyak percobaan, tunggu 1 menit" }, 429);
-  if (!allowed(req)) return json({ error: "Password admin salah" }, 401);
+  if (!(await allowed(req))) return json({ error: "Password admin salah atau belum login sebagai pemilik toko" }, 401);
   const b = await req.json().catch(() => ({}));
   const db = admin();
   try {

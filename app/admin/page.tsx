@@ -1,21 +1,30 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { rupiah, fmtDate } from "@/lib/status";
+import { getSupabase } from "@/lib/supabase-browser";
 
 const NAMA: Record<string, string> = { monthly: "Bulanan", yearly: "Tahunan", trial: "Percobaan" };
 
-// Halaman PEMILIK PLATFORM (Anda). Dilindungi ADMIN_PASSWORD di environment variable Vercel.
+// Halaman PEMILIK PLATFORM (Anda). Bisa dibuka dengan ADMIN_PASSWORD (env Vercel),
+// atau langsung bila sudah login sebagai pemilik toko (role owner).
 export default function Admin() {
   const [pw, setPw] = useState("");
+  const [token, setToken] = useState("");
+  const [checked, setChecked] = useState(false);
   const [d, setD] = useState<any>(null);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const call = async (method: string, body?: any) => {
+  const call = async (method: string, body?: any, tok?: string) => {
+    const bearer = tok || token;
     const r = await fetch("/api/admin", {
       method, cache: "no-store",
-      headers: { "Content-Type": "application/json", "x-admin-password": pw },
+      headers: {
+        "Content-Type": "application/json",
+        ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
+        ...(pw ? { "x-admin-password": pw } : {}),
+      },
       body: body ? JSON.stringify(body) : undefined,
     });
     const j = await r.json().catch(() => ({}));
@@ -25,6 +34,22 @@ export default function Admin() {
   const load = async () => {
     try { setD(await call("GET")); setErr(""); } catch (e: any) { setErr(e.message); setD(null); }
   };
+
+  // Sudah login sebagai owner? Buka admin tanpa perlu mengetik password.
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await getSupabase().auth.getSession();
+        const t = data.session?.access_token;
+        if (t) {
+          setToken(t);
+          setD(await call("GET", undefined, t));
+          setErr("");
+        }
+      } catch { /* jatuh ke form password */ }
+      setChecked(true);
+    })();
+  }, []);
   const act = async (body: any, ok: string) => {
     if (busy) return;
     setBusy(true); setMsg(""); setErr("");
@@ -32,6 +57,14 @@ export default function Admin() {
     await load();
     setBusy(false);
   };
+
+  if (!d && !checked) {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4">
+        <p className="text-slate-500">Memeriksa sesi…</p>
+      </main>
+    );
+  }
 
   if (!d) {
     return (
@@ -42,6 +75,9 @@ export default function Admin() {
           <label className="label" htmlFor="pw">Password admin</label>
           <input id="pw" type="password" className="input" value={pw} onChange={(e) => setPw(e.target.value)} />
           <button className="btn-primary w-full" onClick={load}>Masuk</button>
+          <p className="text-xs text-slate-500">
+            Sudah login sebagai pemilik toko? Admin terbuka otomatis tanpa password.
+          </p>
         </div>
       </main>
     );
