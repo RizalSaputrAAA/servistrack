@@ -15,6 +15,8 @@ export default function Admin() {
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [rstEmail, setRstEmail] = useState("");
+  const [rstPw, setRstPw] = useState("");
 
   const call = async (method: string, body?: any, tok?: string) => {
     const bearer = tok || token;
@@ -128,6 +130,16 @@ export default function Admin() {
             </div>
           </div>
         ))}
+      </div>
+      <div className="card space-y-3">
+        <h2 className="font-semibold">Reset sandi staf</h2>
+        <p className="text-xs text-slate-500">Cadangan bila email reset tidak sampai. Minimal 8 karakter.</p>
+        <input className="input" placeholder="email staf" value={rstEmail} onChange={(e) => setRstEmail(e.target.value)} />
+        <input className="input" placeholder="sandi baru" value={rstPw} onChange={(e) => setRstPw(e.target.value)} />
+        <button className="btn-primary" disabled={busy}
+          onClick={() => { act({ action: "reset_user_password", email: rstEmail, password: rstPw }, "Sandi staf berhasil direset"); setRstPw(""); }}>
+          Reset sandi
+        </button>
       </div>
     </main>
   );

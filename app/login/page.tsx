@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase-browser";
 import { api } from "@/lib/api";
@@ -9,6 +10,13 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("daftar")) setNote("Akun berhasil dibuat. Silakan masuk.");
+    if (q.get("reset")) setNote("Sandi diperbarui. Silakan masuk kembali.");
+  }, []);
   const router = useRouter();
 
   const submit = async (e: React.FormEvent) => {
@@ -29,6 +37,7 @@ export default function Login() {
       <h1 className="text-2xl font-bold text-brand">ServisTrack</h1>
       <p className="mb-6 text-sm text-slate-500">Masuk khusus staf toko</p>
       <form onSubmit={submit} className="card space-y-3">
+        {note && <p className="ok">{note}</p>}
         {err && <p className="err">{err}</p>}
         <div>
           <label className="label" htmlFor="email">Email</label>
@@ -40,6 +49,10 @@ export default function Login() {
         </div>
         <button className="btn-primary w-full" disabled={busy}>{busy ? "Masuk…" : "Masuk"}</button>
       </form>
+      <div className="mt-4 flex justify-between text-sm">
+        <Link className="underline" href="/lupa-sandi">Lupa sandi?</Link>
+        <Link className="underline" href="/daftar">Daftar toko baru</Link>
+      </div>
     </main>
   );
 }

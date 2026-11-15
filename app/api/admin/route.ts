@@ -62,6 +62,16 @@ export async function POST(req: Request) {
     } else if (b.action === "manual") {
       if (!["monthly", "yearly"].includes(b.plan)) return fail("Paket tidak valid");
       await extendSub(b.shop_id, b.plan);
+    } else if (b.action === "reset_user_password") {
+      const email = String(b.email || "").trim().toLowerCase();
+      const password = String(b.password || "");
+      if (!email) return fail("Email wajib diisi");
+      if (password.length < 8) return fail("Password minimal 8 karakter");
+      const { data: list } = await db.auth.admin.listUsers({ page: 1, perPage: 200 });
+      const u = (list?.users || []).find((x: any) => (x.email || "").toLowerCase() === email);
+      if (!u) return fail("Email tidak ditemukan");
+      const { error: pwErr } = await db.auth.admin.updateUserById(u.id, { password });
+      if (pwErr) return fail(pwErr);
     } else if (b.action === "reset_trial") {
       const until = new Date(Date.now() + TRIAL_DAYS * 86400000).toISOString();
       await db.from("shops").update({ plan: "trial", trial_ends_at: until, paid_until: null }).eq("id", b.shop_id);

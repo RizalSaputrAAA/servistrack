@@ -19,6 +19,16 @@ Variabel NEXT_PUBLIC_* bertipe Config; SUPABASE_SERVICE_ROLE_KEY bertipe Secret.
 ## Akun demo
 owner@ / kasir@ / teknisi@servistrack.id. Tiket demo: SV-2026-0003.
 
+## Pendaftaran toko & sandi
+- Toko baru daftar mandiri di `/daftar` (nama toko, alamat, WA, nama pemilik, email, password).
+  Akun pemilik langsung aktif tanpa verifikasi email dan mendapat percobaan 3 hari.
+- Lupa sandi: `/lupa-sandi` mengirim tautan reset Supabase ke email terdaftar; tautan
+  mengarah ke `/atur-sandi` untuk membuat sandi baru.
+- Cadangan: pemilik platform dapat mereset sandi staf dari `/admin` (kartu "Reset sandi staf").
+- Supaya email reset benar-benar terkirim, atur SMTP kustom di Supabase
+  (Project Settings → Auth → SMTP). Email bawaan Supabase dibatasi beberapa per jam.
+- `/admin` bisa dibuka dengan login pemilik toko (role owner) atau dengan `ADMIN_PASSWORD`.
+
 ## Langganan (bulanan / tahunan)
 1. Jalankan `supabase/04_subscription.sql` di Supabase SQL Editor. Skrip ini menambah
    kolom `plan`, `trial_ends_at`, `paid_until` di tabel `shops`, membuat tabel
