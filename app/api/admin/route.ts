@@ -16,7 +16,14 @@ function passwordOk(req: Request) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-// Jalur kedua: pemilik toko yang sudah login (Bearer token) boleh membuka admin.
+// Daftar email yang boleh masuk /admin lewat login owner (pengelola platform).
+// Pisahkan dengan koma bila lebih dari satu. Default: akun demo owner.
+function platformAdmins() {
+  return (process.env.PLATFORM_ADMIN_EMAILS || "owner@servistrack.id")
+    .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+}
+
+// Jalur kedua: pengelola platform yang sudah login (Bearer token).
 // Sengaja tidak memakai getStaff() agar gerbang langganan tidak ikut memblokir admin.
 async function ownerByToken(req: Request) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -24,8 +31,9 @@ async function ownerByToken(req: Request) {
   const db = admin();
   const { data } = await db.auth.getUser(token);
   if (!data?.user) return false;
+  const email = (data.user.email || "").toLowerCase();
   const { data: p } = await db.from("profiles").select("role,active").eq("id", data.user.id).single();
-  return !!p && p.active && p.role === "owner";
+  return !!p && p.active && p.role === "owner" && platformAdmins().includes(email);
 }
 
 async function allowed(req: Request) {
@@ -34,7 +42,7 @@ async function allowed(req: Request) {
 
 export async function GET(req: Request) {
   if (limited(req, 20)) return json({ error: "Terlalu banyak percobaan, tunggu 1 menit" }, 429);
-  if (!(await allowed(req))) return json({ error: "Password admin salah atau belum login sebagai pemilik toko" }, 401);
+  if (!(await allowed(req))) return json({ error: "Password admin salah, atau akun ini bukan pengelola platform" }, 401);
   try {
     const db = admin();
     const { data: shops } = await db.from("shops").select("id,name").order("created_at");
@@ -57,7 +65,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   if (limited(req, 20)) return json({ error: "Terlalu banyak percobaan, tunggu 1 menit" }, 429);
-  if (!(await allowed(req))) return json({ error: "Password admin salah atau belum login sebagai pemilik toko" }, 401);
+  if (!(await allowed(req))) return json({ error: "Password admin salah, atau akun ini bukan pengelola platform" }, 401);
   const b = await req.json().catch(() => ({}));
   const db = admin();
   try {
