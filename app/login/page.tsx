@@ -49,9 +49,10 @@ export default function Login() {
         </div>
         <button className="btn-primary w-full" disabled={busy}>{busy ? "Masuk…" : "Masuk"}</button>
       </form>
-      <div className="mt-4 flex justify-between text-sm">
+      <div className="mt-4 flex flex-wrap justify-between gap-2 text-sm">
         <Link className="underline" href="/lupa-sandi">Lupa sandi?</Link>
         <Link className="underline" href="/daftar">Daftar toko baru</Link>
+        <Link className="underline" href="/demo">Akun demo</Link>
       </div>
     </main>
   );

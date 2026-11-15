@@ -40,7 +40,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-slate-200 bg-white py-4 text-center text-sm text-slate-500">
-        Pontianak, Kalimantan Barat · <Link href="/login" className="underline">Masuk staf</Link>
+        Pontianak, Kalimantan Barat · <Link href="/login" className="underline">Masuk staf</Link> · <Link href="/demo" className="underline">Akun demo</Link>
       </footer>
     </div>
   );
