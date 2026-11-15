@@ -1,7 +1,6 @@
 import { admin } from "@/lib/supabase-admin";
 import { getStaff, json, loadTicket } from "@/lib/auth";
 export const dynamic = "force-dynamic";
-
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   const me = await getStaff(req);
   if (!me) return json({ error: "Belum login" }, 401);
@@ -20,4 +19,21 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     ticket, events: ev.data || [], usage: us.data || [], payments: pay.data || [],
     technicians: techs.data || [], parts: parts.data || [],
   });
+}
+
+// Hapus satu tiket. Data turunan (event, pembayaran, pemakaian part, foto)
+// ikut terhapus lewat ON DELETE CASCADE di database.
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  const me = await getStaff(req);
+  if (!me) return json({ error: "Belum login" }, 401);
+  if (!["owner", "cashier"].includes(me.role)) {
+    return json({ error: "Hanya pemilik toko atau kasir yang boleh menghapus tiket" }, 403);
+  }
+  const db = admin();
+  const { data: t } = await db.from("tickets").select("id,ticket_code")
+    .eq("id", params.id).eq("shop_id", me.shop_id).single();
+  if (!t) return json({ error: "Tiket tidak ditemukan" }, 404);
+  const { error } = await db.from("tickets").delete().eq("id", t.id).eq("shop_id", me.shop_id);
+  if (error) return json({ error: error.message }, 500);
+  return json({ ok: true, ticket_code: t.ticket_code });
 }

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import StaffShell from "@/components/StaffShell";
+import StaffShell, { useMe } from "@/components/StaffShell";
 import StatusBadge from "@/components/StatusBadge";
 import { api } from "@/lib/api";
 import { STATUS, fmtDate } from "@/lib/status";
@@ -17,6 +17,20 @@ function List() {
   const [page, setPage] = useState(1);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
+  const me = useMe();
+  const canDelete = ["owner", "cashier"].includes(me?.role);
+  const [busyId, setBusyId] = useState("");
+
+  const hapus = async (row: any) => {
+    const yakin = confirm(`Hapus tiket ${row.ticket_code} - ${row.customer_name}?` + "\n" + "Event, pembayaran, dan pemakaian sparepart ikut terhapus. Tidak bisa dibatalkan.");
+    if (!yakin) return;
+    setBusyId(row.id); setErr("");
+    try {
+      await api(`/api/tickets/${row.id}`, { method: "DELETE" });
+      setRows((x) => x.filter((y) => y.id !== row.id));
+    } catch (e: any) { setErr(e.message); }
+    setBusyId("");
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -92,7 +106,14 @@ function List() {
                 <td className="td text-slate-500">{r.assigned_to ? "Sudah" : "Belum"}</td>
                 <td className="td whitespace-nowrap text-slate-500">{fmtDate(r.created_at)}</td>
                 <td className="td">
-                  <Link className="btn-ghost" href={`/kasir/tickets/${r.id}`}>Detail</Link>
+                  <div className="flex gap-2">
+                    <Link className="btn-ghost" href={`/kasir/tickets/${r.id}`}>Detail</Link>
+                    {canDelete && (
+                      <button className="btn-danger whitespace-nowrap" disabled={busyId === r.id} onClick={() => hapus(r)}>
+                        {busyId === r.id ? "…" : "Hapus"}
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

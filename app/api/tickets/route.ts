@@ -50,9 +50,14 @@ export async function POST(req: Request) {
 
   const db = admin();
   const year = new Date().getFullYear();
-  const { count } = await db.from("tickets").select("id", { count: "exact", head: true })
-    .eq("shop_id", me.shop_id).like("ticket_code", `SV-${year}-%`);
-  const code = `SV-${year}-${String((count || 0) + 1).padStart(4, "0")}`;
+  // Ambil nomor urut dari kode terbesar yang pernah ada, bukan dari jumlah tiket.
+  // Dengan begitu menghapus tiket tidak membuat kode lama dipakai ulang.
+  const { data: last } = await db.from("tickets").select("ticket_code")
+    .eq("shop_id", me.shop_id).like("ticket_code", `SV-${year}-%`)
+    .order("ticket_code", { ascending: false }).limit(1);
+  const lastSeq = last?.[0]?.ticket_code ? parseInt(String(last[0].ticket_code).split("-")[2], 10) : 0;
+  const nextSeq = (Number.isNaN(lastSeq) ? 0 : lastSeq) + 1;
+  const code = `SV-${year}-${String(nextSeq).padStart(4, "0")}`;
   const t = triage(symptoms);
 
   const { data, error } = await db.from("tickets").insert({
