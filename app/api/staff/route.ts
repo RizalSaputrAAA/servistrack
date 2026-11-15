@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   if (err) return err;
   const db = admin();
   const { data: profiles } = await db.from("profiles")
-    .select("id,full_name,role,active,created_at").eq("shop_id", me!.shop_id).order("created_at");
+    .select("id,full_name,role,active,created_at,whatsapp").eq("shop_id", me!.shop_id).order("created_at");
   const { data: users } = await db.auth.admin.listUsers({ page: 1, perPage: 200 });
   const emailById: Record<string, string> = {};
   for (const u of users?.users || []) if (u.id) emailById[u.id] = u.email || "";
@@ -37,7 +37,9 @@ export async function POST(req: Request) {
       const email = String(b.email || "").trim().toLowerCase();
       const role = String(b.role || "cashier");
       const password = String(b.password || "");
+      const whatsapp = String(b.whatsapp || "").trim();
       if (fullName.length < 3) return fail("Nama staf minimal 3 karakter");
+      if (whatsapp && !/^08\d{8,12}$/.test(whatsapp)) return fail("Nomor WhatsApp staf harus format 08xx (10-14 digit)");
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("Email tidak valid");
       if (!ROLES.includes(role)) return fail("Peran tidak valid");
       if (password.length < 8) return fail("Password minimal 8 karakter");
@@ -50,7 +52,7 @@ export async function POST(req: Request) {
         return fail(/already|registered|exists|duplicate/i.test(m) ? "Email sudah terdaftar" : (m || "Gagal membuat akun"));
       }
       const { error: prErr } = await db.from("profiles")
-        .insert({ id: cu.user.id, shop_id: me!.shop_id, full_name: fullName, role });
+        .insert({ id: cu.user.id, shop_id: me!.shop_id, full_name: fullName, role, whatsapp: whatsapp || null });
       if (prErr) {
         await db.auth.admin.deleteUser(cu.user.id).catch(() => {});
         return fail(prErr.message);
@@ -66,6 +68,14 @@ export async function POST(req: Request) {
     if (b.action === "set_active") {
       if (target.id === me!.id) return fail("Tidak bisa menonaktifkan akun sendiri");
       const { error } = await db.from("profiles").update({ active: !!b.active }).eq("id", id);
+      if (error) return fail(error);
+      return json({ ok: true });
+    }
+
+    if (b.action === "set_whatsapp") {
+      const wa = String(b.whatsapp || "").trim();
+      if (wa && !/^08\d{8,12}$/.test(wa)) return fail("Nomor WhatsApp harus format 08xx (10-14 digit)");
+      const { error } = await db.from("profiles").update({ whatsapp: wa || null }).eq("id", id);
       if (error) return fail(error);
       return json({ ok: true });
     }

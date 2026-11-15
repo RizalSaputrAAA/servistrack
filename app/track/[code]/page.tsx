@@ -56,6 +56,23 @@ export default function Track() {
             <div className="mt-4"><StatusBadge status={t.status} big /></div>
           </div>
 
+          {t.technician && (
+            <div className="card">
+              <h2 className="font-semibold">Teknisi yang menangani</h2>
+              <p className="mt-1 text-sm">{t.technician.name}</p>
+              {t.technician.whatsapp && (
+                <a
+                  className="btn-ghost mt-2 inline-block"
+                  target="_blank"
+                  rel="noreferrer"
+                  href={`https://wa.me/${String(t.technician.whatsapp).replace(/^0/, "62")}?text=${encodeURIComponent(`Halo, saya pelanggan dengan kode tiket ${t.ticket_code}.`)}`}
+                >
+                  Chat teknisi via WA
+                </a>
+              )}
+            </div>
+          )}
+
           {t.diagnosis && (
             <div className="card">
               <h2 className="font-semibold">Dugaan awal kerusakan</h2>

@@ -11,8 +11,10 @@ function Content() {
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ full_name: "", email: "", password: "", role: "cashier" });
+  const [form, setForm] = useState({ full_name: "", email: "", password: "", role: "cashier", whatsapp: "" });
   const [resetId, setResetId] = useState("");
+  const [waId, setWaId] = useState("");
+  const [waVal, setWaVal] = useState("");
   const [resetPw, setResetPw] = useState("");
   const [toko, setToko] = useState<any>(null);
 
@@ -42,7 +44,7 @@ function Content() {
   const tambah = async (e: React.FormEvent) => {
     e.preventDefault();
     await act({ action: "add", ...form }, "Staf ditambahkan. Beri tahu sandi awalnya.");
-    setForm({ full_name: "", email: "", password: "", role: "cashier" });
+    setForm({ full_name: "", email: "", password: "", role: "cashier", whatsapp: "" });
   };
 
   return (
@@ -91,7 +93,7 @@ function Content() {
               <tr key={s.id} className="border-t border-slate-100">
                 <td className="td font-medium">{s.full_name}</td>
                 <td className="td">{s.email || "-"}</td>
-                <td className="td">{PERAN[s.role] || s.role}</td>
+                <td className="td">{PERAN[s.role] || s.role}<br /><span className="text-xs text-slate-500">{s.whatsapp || "WA belum diisi"}</span></td>
                 <td className="td">{s.active ? "Aktif" : <span className="text-red-600">Nonaktif</span>}</td>
                 <td className="td">
                   <div className="flex flex-wrap gap-2">
@@ -99,10 +101,22 @@ function Content() {
                       onClick={() => act({ action: "set_active", id: s.id, active: !s.active }, s.active ? "Staf dinonaktifkan" : "Staf diaktifkan")}>
                       {s.active ? "Nonaktifkan" : "Aktifkan"}
                     </button>
+                    <button className="btn-ghost" onClick={() => { setWaId(waId === s.id ? "" : s.id); setWaVal(s.whatsapp || ""); }}>
+                      {s.whatsapp ? "Ubah WA" : "Isi WA"}
+                    </button>
                     <button className="btn-ghost" onClick={() => { setResetId(resetId === s.id ? "" : s.id); setResetPw(""); }}>
                       Reset sandi
                     </button>
                   </div>
+                  {waId === s.id && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <input className="input" placeholder="08xxxxxxxxxx" value={waVal} onChange={(e) => setWaVal(e.target.value)} />
+                      <button className="btn-primary" disabled={busy}
+                        onClick={async () => { await act({ action: "set_whatsapp", id: s.id, whatsapp: waVal }, "Nomor WhatsApp disimpan"); setWaId(""); setWaVal(""); }}>
+                        Simpan
+                      </button>
+                    </div>
+                  )}
                   {resetId === s.id && (
                     <div className="mt-2 flex flex-wrap gap-2">
                       <PasswordInput placeholder="sandi baru (min. 8)" value={resetPw} onChange={(e) => setResetPw(e.target.value)} />
@@ -134,6 +148,10 @@ function Content() {
           <div>
             <label className="label" htmlFor="pw">Sandi awal (min. 8)</label>
             <PasswordInput id="pw" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          </div>
+          <div>
+            <label className="label" htmlFor="wa">Nomor WhatsApp staf</label>
+            <input id="wa" className="input" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="08xxxxxxxxxx (dipakai pelanggan)" />
           </div>
           <div>
             <label className="label" htmlFor="rl">Peran</label>

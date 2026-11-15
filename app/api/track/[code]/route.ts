@@ -15,9 +15,12 @@ export async function GET(req: Request, { params }: { params: { code: string } }
   const { data: t } = await db.from("tickets").select("*").eq("ticket_code", code).single();
   if (!t) return json({ error: "Kode tiket tidak ditemukan. Periksa kembali kode Anda." }, 404);
 
-  const [{ data: events }, { data: shop }] = await Promise.all([
+  const [{ data: events }, { data: shop }, { data: tech }] = await Promise.all([
     db.from("ticket_events").select("to_status,note,created_at").eq("ticket_id", t.id).eq("is_public", true).order("created_at"),
     db.from("shops").select("name,address,phone").eq("id", t.shop_id).single(),
+    t.assigned_to
+      ? db.from("profiles").select("full_name,whatsapp").eq("id", t.assigned_to).single()
+      : Promise.resolve({ data: null } as any),
   ]);
   // Hanya field publik yang dikirim. Nomor HP & catatan internal TIDAK ikut.
   return json({
@@ -33,5 +36,6 @@ export async function GET(req: Request, { params }: { params: { code: string } }
     approved: t.approved,
     events: events || [],
     shop,
+    technician: tech ? { name: tech.full_name, whatsapp: tech.whatsapp || null } : null,
   });
 }
