@@ -133,6 +133,7 @@ export default function Admin() {
               <button className="btn-ghost" disabled={busy} onClick={() => act({ action: "manual", shop_id: s.id, plan: "monthly" }, "Diperpanjang 1 bulan")}>+1 bulan</button>
               <button className="btn-ghost" disabled={busy} onClick={() => act({ action: "manual", shop_id: s.id, plan: "yearly" }, "Diperpanjang 1 tahun")}>+1 tahun</button>
               <button className="btn-ghost" disabled={busy} onClick={() => { if (confirm("Ulang masa percobaan dan hapus masa berbayar?")) act({ action: "reset_trial", shop_id: s.id }, "Masa percobaan diulang"); }}>Reset trial</button>
+              <button className="btn-ghost" disabled={busy} onClick={() => { if (confirm("Buat toko seolah kedaluwarsa (untuk uji penguncian)?")) act({ action: "expire", shop_id: s.id }, "Toko dibuat kedaluwarsa"); }}>Uji kedaluwarsa</button>
             </div>
           </div>
         ))}

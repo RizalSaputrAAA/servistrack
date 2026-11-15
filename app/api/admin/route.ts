@@ -118,6 +118,10 @@ export async function POST(req: Request) {
     } else if (b.action === "set_staff_active") {
       const { error: stErr } = await db.from("profiles").update({ active: !!b.active }).eq("id", b.id);
       if (stErr) return fail(stErr);
+    } else if (b.action === "expire") {
+      // Untuk pengujian: buat masa aktif toko seolah sudah lewat sehari.
+      const past = new Date(Date.now() - 86400000).toISOString();
+      await db.from("shops").update({ trial_ends_at: past, paid_until: null }).eq("id", b.shop_id);
     } else if (b.action === "reset_trial") {
       const until = new Date(Date.now() + TRIAL_DAYS * 86400000).toISOString();
       await db.from("shops").update({ plan: "trial", trial_ends_at: until, paid_until: null }).eq("id", b.shop_id);
