@@ -21,6 +21,7 @@ export async function POST(req: Request) {
   if (shopName.length < 3) return fail("Nama toko minimal 3 karakter");
   if (ownerName.length < 3) return fail("Nama pemilik minimal 3 karakter");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("Email tidak valid");
+  if (!/^08\d{8,12}$/.test(phone)) return fail("Nomor WhatsApp toko wajib diisi, format 08xx (10-14 digit)");
   if (password.length < 8) return fail("Password minimal 8 karakter");
 
   const db = admin();

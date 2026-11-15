@@ -15,6 +15,7 @@ export default function Daftar() {
     e.preventDefault();
     if (busy) return;
     setErr("");
+    if (!/^08\d{8,12}$/.test(f.phone.trim())) return setErr("Nomor WhatsApp toko wajib format 08xx (10-14 digit)");
     if (f.password !== f.password2) return setErr("Konfirmasi password tidak sama");
     setBusy(true);
     try {
@@ -47,8 +48,8 @@ export default function Daftar() {
           <input id="addr" className="input" value={f.address} onChange={set("address")} />
         </div>
         <div>
-          <label className="label" htmlFor="phone">Nomor WhatsApp (opsional)</label>
-          <input id="phone" className="input" value={f.phone} onChange={set("phone")} placeholder="08…" />
+          <label className="label" htmlFor="phone">Nomor WhatsApp toko (wajib, dipakai pelanggan)</label>
+          <input id="phone" className="input" required value={f.phone} onChange={set("phone")} placeholder="08xxxxxxxxxx" />
         </div>
         <hr className="border-slate-200" />
         <div>

@@ -14,11 +14,12 @@ function Content() {
   const [form, setForm] = useState({ full_name: "", email: "", password: "", role: "cashier" });
   const [resetId, setResetId] = useState("");
   const [resetPw, setResetPw] = useState("");
+  const [toko, setToko] = useState<any>(null);
 
   const load = () =>
     api("/api/staff").then((r) => { setRows(r.staff); setErr(""); }).catch((e) => setErr(e.message));
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); api("/api/shop").then((x) => setToko(x.shop)).catch(() => {}); }, []);
 
   const act = async (body: any, ok: string) => {
     if (busy) return;
@@ -26,6 +27,15 @@ function Content() {
     try { await api("/api/staff", { method: "POST", body }); setMsg(ok); }
     catch (e: any) { setErr(e.message); }
     await load();
+    setBusy(false);
+  };
+
+  const simpanToko = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true); setErr(""); setMsg("");
+    try { await api("/api/shop", { method: "PATCH", body: { name: toko?.name, phone: toko?.phone, address: toko?.address } }); setMsg("Data toko disimpan"); }
+    catch (e: any) { setErr(e.message); }
     setBusy(false);
   };
 
@@ -44,6 +54,26 @@ function Content() {
 
       {msg && <p className="ok">{msg}</p>}
       {err && <p className="err">{err}</p>}
+
+      <form onSubmit={simpanToko} className="card space-y-3">
+        <h2 className="font-semibold">Data toko & WhatsApp</h2>
+        <p className="text-xs text-slate-500">Nomor ini yang dipakai pelanggan untuk menghubungi toko saat melacak tiket. Isi nomor WhatsApp toko, bukan nomor pribadi yang tidak dipakai.</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="label" htmlFor="sn">Nama toko</label>
+            <input id="sn" className="input" value={toko?.name || ""} onChange={(e) => setToko({ ...toko, name: e.target.value })} />
+          </div>
+          <div>
+            <label className="label" htmlFor="sp">Nomor WhatsApp toko</label>
+            <input id="sp" className="input" value={toko?.phone || ""} onChange={(e) => setToko({ ...toko, phone: e.target.value })} placeholder="08xxxxxxxxxx" />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label" htmlFor="sa">Alamat</label>
+            <input id="sa" className="input" value={toko?.address || ""} onChange={(e) => setToko({ ...toko, address: e.target.value })} />
+          </div>
+        </div>
+        <button className="btn-primary" disabled={busy}>Simpan data toko</button>
+      </form>
 
       <div className="card overflow-x-auto">
         <table className="w-full">
