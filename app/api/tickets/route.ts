@@ -50,20 +50,22 @@ export async function POST(req: Request) {
 
   const db = admin();
   const year = new Date().getFullYear();
-  // Kode tiket dipakai untuk pelacakan publik, jadi harus unik GLOBAL (lintas toko).
-  // Ambil nomor terbesar dari semua toko, lalu coba beberapa kali bila bentrok.
-  const { data: last } = await db.from("tickets").select("ticket_code")
-    .like("ticket_code", `SV-${year}-%`)
-    .order("ticket_code", { ascending: false }).limit(1);
-  const lastSeq = last?.[0]?.ticket_code ? parseInt(String(last[0].ticket_code).split("-")[2], 10) : 0;
-  let seq = (Number.isNaN(lastSeq) ? 0 : lastSeq) + 1;
   const t = triage(symptoms);
 
+  // Kode tiket dipakai untuk pelacakan publik, jadi harus unik GLOBAL (lintas toko).
+  // Setiap percobaan membaca ulang nomor terbesar, sehingga saat banyak toko membuat
+  // tiket bersamaan, nomor ikut bergeser dan tidak gagal karena bentrok.
   let data: any = null;
   let code = "";
   let lastErr: any = null;
-  for (let attempt = 0; attempt < 5; attempt++) {
-    code = `SV-${year}-${String(seq + attempt).padStart(4, "0")}`;
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const { data: last } = await db.from("tickets").select("ticket_code")
+      .like("ticket_code", `SV-${year}-%`)
+      .order("ticket_code", { ascending: false }).limit(1);
+    const lastSeq = last?.[0]?.ticket_code ? parseInt(String(last[0].ticket_code).split("-")[2], 10) : 0;
+    const seq = (Number.isNaN(lastSeq) ? 0 : lastSeq) + 1;
+    code = `SV-${year}-${String(seq).padStart(4, "0")}`;
+
     const res = await db.from("tickets").insert({
       shop_id: me.shop_id, ticket_code: code,
       customer_name: name, customer_phone: phone,
@@ -72,9 +74,11 @@ export async function POST(req: Request) {
       triage_diagnosis: t.diagnosis, triage_confidence: t.confidence, triage_score: t.score,
       status: "received", created_by: me.id,
     }).select().single();
+
     if (!res.error) { data = res.data; lastErr = null; break; }
     lastErr = res.error;
     if (!/duplicate key/i.test(res.error.message)) break;
+    await new Promise((r) => setTimeout(r, 15 + attempt * 10)); // beri jeda singkat sebelum membaca ulang
   }
   if (!data) return fail(lastErr || "Gagal membuat tiket", 500);
 
