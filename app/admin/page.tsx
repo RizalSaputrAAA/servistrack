@@ -3,6 +3,7 @@ import PasswordInput from "@/components/PasswordInput";
 import { useEffect, useState } from "react";
 import { rupiah, fmtDate } from "@/lib/status";
 import { getSupabase } from "@/lib/supabase-browser";
+import ReportView from "@/components/ReportView";
 
 const NAMA: Record<string, string> = { monthly: "Bulanan", yearly: "Tahunan", trial: "Percobaan" };
 
@@ -139,6 +140,11 @@ export default function Admin() {
             Per bulan: {d.finance.perMonth.map((m: any) => `${m.month}: ${rupiah(m.total)} (${m.count})`).join(" · ")}
           </p>
         )}
+      </div>
+
+      <div className="card">
+        <h2 className="mb-3 font-semibold">Laporan &amp; ekspor langganan</h2>
+        <ReportView endpoint="/api/reports/admin" base="laporan-langganan" headers={pw ? { "x-admin-password": pw } : {}} />
       </div>
       <div className="card">
         <h2 className="mb-2 font-semibold">Tagihan menunggu verifikasi</h2>
