@@ -9,7 +9,7 @@ export default function Home() {
     e.preventDefault();
     const c = code.trim().toUpperCase();
     if (!c) { setErr("Masukkan kode tiket dulu"); return; }
-    if (!/^SV-\d{4}-\d{3,5}$/.test(c)) { setErr("Format kode: SV-2026-0001"); return; }
+    if (!/^[A-Z]{2,5}\d?-\d{4}-\d{4}$/.test(c)) { setErr("Format kode: SLM-2026-0001"); return; }
     setErr("");
     window.location.href = `/track/${encodeURIComponent(c)}`;
   };
@@ -33,7 +33,7 @@ export default function Home() {
         <form onSubmit={go} className="mt-8 flex flex-col gap-3 sm:flex-row">
           <input
             className="input py-3 text-lg"
-            placeholder="SV-2026-0001"
+            placeholder="SLM-2026-0001"
             value={code}
             onChange={(e) => { setCode(e.target.value); setErr(""); }}
             aria-label="Kode tiket"

@@ -1,4 +1,5 @@
 import { admin } from "@/lib/supabase-admin";
+import { shopPrefix, ticketCode } from "@/lib/ticket-code";
 import { getStaff, json, fail } from "@/lib/auth";
 import { triage, SYMPTOMS } from "@/lib/triage";
 export const dynamic = "force-dynamic";
@@ -52,19 +53,21 @@ export async function POST(req: Request) {
   const year = new Date().getFullYear();
   const t = triage(symptoms);
 
-  // Kode tiket dipakai untuk pelacakan publik, jadi harus unik GLOBAL (lintas toko).
-  // Setiap percobaan membaca ulang nomor terbesar, sehingga saat banyak toko membuat
-  // tiket bersamaan, nomor ikut bergeser dan tidak gagal karena bentrok.
+  // Kode tiket memakai awalan toko (mis. SLM-2026-0001) sehingga tiap toko punya
+  // penomoran sendiri, tetapi tetap unik global untuk pelacakan publik.
+  const prefix = await shopPrefix(db, me.shop_id);
+
   let data: any = null;
   let code = "";
   let lastErr: any = null;
   for (let attempt = 0; attempt < 12; attempt++) {
     const { data: last } = await db.from("tickets").select("ticket_code")
-      .like("ticket_code", `SV-${year}-%`)
+      .eq("shop_id", me.shop_id)
+      .like("ticket_code", `${prefix}-${year}-%`)
       .order("ticket_code", { ascending: false }).limit(1);
     const lastSeq = last?.[0]?.ticket_code ? parseInt(String(last[0].ticket_code).split("-")[2], 10) : 0;
     const seq = (Number.isNaN(lastSeq) ? 0 : lastSeq) + 1;
-    code = `SV-${year}-${String(seq).padStart(4, "0")}`;
+    code = ticketCode(prefix, year, seq);
 
     const res = await db.from("tickets").insert({
       shop_id: me.shop_id, ticket_code: code,
